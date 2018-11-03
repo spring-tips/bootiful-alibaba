@@ -30,6 +30,8 @@ xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
 
 
 ## Nacos 
+* NaCos = Naming & Config Service
+* port 8848 because Mt. Everest's height is 8848M tall (LOL)
 * start nacos: `$NACOS_HOME/bin/startup.sh -m standalone`
 * visit nacos at http://localhost:8848/nacos/#/configurationManagement?dataId=&group=&appName=&namespace= 
 * make sure to choose 'En'!
@@ -52,6 +54,39 @@ xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
 * u can change the configuration in the nacos config management and itll be instantly refreshed in the client apps and u can listen tot he RefreshedScopedRefreshEvent just as u would with spring cloud config server. 
 * http://localhost:62475/actuator/nacos-config
 
+* u can add Sentinel FlowRules to Nacos itself: https://github.com/alibaba/sentinel/blob/master/sentinel-demo/sentinel-demo-dynamic-file-rule/src/main/resources/FlowRule.json (customized to reflect the resource in this client app, `/nihao`)
+  see the following image: adding-flow-rules-from-sentinel-to-nacos-so-that-they-apply-to-other-microservices.png
+* add the following to the client that wants this flow rules to be honored: 
+    <dependency>
+       <groupId>com.alibaba.csp</groupId>
+       <artifactId>sentinel-datasource-nacos</artifactId>
+       <version>1.3.0-GA</version>
+    </dependency>
+* add the following properties to tell the client to laod any flow rules from Naco: 
+    spring.cloud.sentinel.datasource.type=nacos
+    spring.cloud.sentinel.datasource.serverAddr=localhost:8848
+    spring.cloud.sentinel.datasource.groupId=DEFAULT_GROUP
+    spring.cloud.sentinel.datasource.dataId=sentinel-flow-rules.json
+    spring.cloud.sentinel.datasource.converter=flowConverter
+* the `flowConverter` is: 
+    
+    ```  
+    @Component("flowConverter")
+    class FlowConverter implements Converter<String, List<FlowRule>> {
+    
+        @Override
+        public List<FlowRule> convert(String source) {
+            return JSON.parseObject(source, new TypeReference<List<FlowRule>>() {
+            });
+        }
+    }
+    ``` 
+    
+* ```	@SentinelDataSource("spring.cloud.sentinel.datasource") private ReadableDataSource readableDataSource; ```
+
+    
+
 ## ACM 
 * ACM: goto alibabacloud.com -> Products > Middleware > Application Configutation Management 
 
+git@github.com:spring-tips/bootiful-alibaba.git
