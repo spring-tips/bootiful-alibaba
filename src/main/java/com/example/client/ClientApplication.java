@@ -7,7 +7,10 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import com.aliyun.oss.OSS;
+import com.aliyun.oss.model.Bucket;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -18,7 +21,9 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.UUID;
 
 @Log4j2
 @RestController
@@ -69,49 +75,34 @@ public class ClientApplication {
 			.flatMap(svcId -> this.discoveryClient.getInstances(svcId).stream())
 			.forEach(si -> log.info("service instance ID: " + si.toString()));
 	}
-}
 
-/*@Data
-@AllArgsConstructor
-@NoArgsConstructor
-class Foo {
-	private String name;
-}
-
-@Configuration
-class FooConfig {
-
-	@ConfigurationProperties(prefix = "a")
-	Foo a() {
-		return new Foo();
-	}
-
-	@ConfigurationProperties(prefix = "b")
-	Foo b() {
-		return new Foo();
-	}
 
 }
+
 
 @Component
-class Lister {
+@Log4j2
+class OssListener {
 
-	private final Foo[] foos;
+	private final OSS oss;
+	private final String globalBucketName = "joshs-bucket-of-cats";
+	private final Resource kittens;
 
-	Lister(Foo[] foos) {
-		this.foos = foos;
+	OssListener(OSS oss, @Value("classpath:/kittens.jpg") Resource kittens) {
+		this.oss = oss;
+		this.kittens = kittens;
+		Assert.isTrue(kittens.exists(), "the file must exist");
 	}
 
 	@EventListener(ApplicationReadyEvent.class)
-	public void go() {
-		for (Foo f : foos) {
-			LogFactory.getLog(getClass()).info(f.toString());
+	public void useOss() throws Exception {
+		if (!this.oss.doesBucketExist(globalBucketName)) {
+			Bucket photos = this.oss.createBucket(globalBucketName);
+			this.oss.putObject(photos.getName(), "kittens.jpg", this.kittens.getFile());
+			this.oss.shutdown();
 		}
 	}
-
 }
-*
-*/
 
 @Component("flowConverter")
 class FlowConverter implements Converter<String, List<FlowRule>> {
