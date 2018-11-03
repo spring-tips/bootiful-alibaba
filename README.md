@@ -1,5 +1,7 @@
 # Spring Cloud ALibaba Notes
 
+https://nacos.io/en-us/docs/quick-start.html
+
 <!-- goals -->
 <!-- - rocketmq (next version)  -->
 - sentinel (not english)
