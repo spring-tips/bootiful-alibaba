@@ -1,9 +1,7 @@
 package com.example.client;
 
-import com.alibaba.csp.sentinel.adapter.servlet.callback.UrlBlockHandler;
 import com.alibaba.csp.sentinel.datasource.Converter;
 import com.alibaba.csp.sentinel.datasource.ReadableDataSource;
-import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
@@ -27,12 +25,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.List;
-import java.util.UUID;
 
 @Log4j2
 @RestController
@@ -46,7 +39,7 @@ public class ClientApplication {
 	private final DiscoveryClient discoveryClient;
 	private final Environment environment;
 
-	ClientApplication(DiscoveryClient discoveryClient, Environment environment) throws UnknownHostException {
+	ClientApplication(DiscoveryClient discoveryClient, Environment environment) {
 		this.discoveryClient = discoveryClient;
 		this.environment = environment;
 	}
@@ -75,8 +68,6 @@ public class ClientApplication {
 			.flatMap(svcId -> this.discoveryClient.getInstances(svcId).stream())
 			.forEach(si -> log.info("service instance ID: " + si.toString()));
 	}
-
-
 }
 
 
@@ -85,7 +76,7 @@ public class ClientApplication {
 class OssListener {
 
 	private final OSS oss;
-	private final String globalBucketName = "joshs-bucket-of-cats";
+	private final String globalBucketName = "kitties-in-a-bucket";
 	private final Resource kittens;
 
 	OssListener(OSS oss, @Value("classpath:/kittens.jpg") Resource kittens) {
@@ -96,11 +87,11 @@ class OssListener {
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void useOss() throws Exception {
-		if (!this.oss.doesBucketExist(globalBucketName)) {
-			Bucket photos = this.oss.createBucket(globalBucketName);
-			this.oss.putObject(photos.getName(), "kittens.jpg", this.kittens.getFile());
-			this.oss.shutdown();
-		}
+		// 	if (!this.oss.doesBucketExist(globalBucketName)) {
+		Bucket photos = this.oss.createBucket(globalBucketName);
+		this.oss.putObject(photos.getName(), "kittens.jpg", this.kittens.getFile());
+		this.oss.shutdown();
+//		}
 	}
 }
 
@@ -117,7 +108,7 @@ class FlowConverter implements Converter<String, List<FlowRule>> {
 
 /*
 flow control rules from sentinel if the TPS limit is exceeded this gets invoked
-**/
+**//*
 @Component
 @Log4j2
 class MyBlockHandler implements UrlBlockHandler {
@@ -133,3 +124,4 @@ class MyBlockHandler implements UrlBlockHandler {
 	}
 }
 
+*/

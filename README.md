@@ -84,20 +84,19 @@ xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
     
 * ```	@SentinelDataSource("spring.cloud.sentinel.datasource") private ReadableDataSource readableDataSource; ```
 
-    
-
 ## OSS (object storeage service)
 * OSS: goto alibabacloud.com -> Products > Middleware > Storage & CDN > Object Storage Service
 git@github.com:spring-tips/bootiful-alibaba.git
 
 * add ```<dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-alicloud-oss</artifactId> </dependency>``` 
 * add 
-```
-spring.cloud.alicloud.access-key=AK
-spring.cloud.alicloud.secret-key=SK
-spring.cloud.alicloud.oss.endpoint=***.aliyuncs.com
-```
-* goto alibabacloud.com, goto profile in top right (with ur avatar), choose 'Access Key', then download it. 
+    
+    ```
+    spring.cloud.alicloud.access-key=AK
+    spring.cloud.alicloud.secret-key=SK
+    spring.cloud.alicloud.oss.endpoint=***.aliyuncs.com
+    ```
 
+* goto alibabacloud.com, goto profile in top right (with ur avatar), choose 'Access Key', then download it. 
  
 *  Regionsin Alibaba Cloud https://www.alibabacloud.com/help/doc-detail/31837.htm?spm=a2c63.l28256.a3.26.11515139ShvIYU 
