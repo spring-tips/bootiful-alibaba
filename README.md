@@ -16,6 +16,7 @@ https://nacos.io/en-us/docs/quick-start.html
 * git clone Spring Cloud Alibaba 
 * git clone alibaba/Sentinel. Do `mvn clean install` for the `sentinel-dashboard` module. if ur behind the GFW u will need the following `settings.xml`:
 
+```
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
@@ -27,7 +28,7 @@ xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
 <mirrorOf>central</mirrorOf>
 </mirror></mirrors>
 </settings>
-
+```
 
 ## Nacos 
 * NaCos = Naming & Config Service
