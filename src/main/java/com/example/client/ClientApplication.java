@@ -1,10 +1,7 @@
 package com.example.client;
 
-import com.alibaba.csp.sentinel.datasource.Converter;
-import com.alibaba.csp.sentinel.datasource.ReadableDataSource;
-import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
+import com.alibaba.csp.sentinel.adapter.servlet.callback.UrlBlockHandler;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.Bucket;
 import lombok.extern.log4j.Log4j2;
@@ -13,7 +10,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cloud.alibaba.sentinel.annotation.SentinelProtect;
-import org.springframework.cloud.alibaba.sentinel.datasource.annotation.SentinelDataSource;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
@@ -25,16 +21,15 @@ import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 @Log4j2
 @RestController
 @SpringBootApplication
 @EnableDiscoveryClient
 public class ClientApplication {
-
-	@SentinelDataSource("spring.cloud.sentinel.datasource")
-	private ReadableDataSource readableDataSource;
 
 	private final DiscoveryClient discoveryClient;
 	private final Environment environment;
@@ -87,28 +82,12 @@ class OssListener {
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void useOss() throws Exception {
-		// 	if (!this.oss.doesBucketExist(globalBucketName)) {
 		Bucket photos = this.oss.createBucket(globalBucketName);
 		this.oss.putObject(photos.getName(), "kittens.jpg", this.kittens.getFile());
-		this.oss.shutdown();
-//		}
-	}
-}
-
-@Component("flowConverter")
-class FlowConverter implements Converter<String, List<FlowRule>> {
-
-	@Override
-	public List<FlowRule> convert(String source) {
-		return JSON.parseObject(source, new TypeReference<List<FlowRule>>() {
-		});
 	}
 }
 
 
-/*
-flow control rules from sentinel if the TPS limit is exceeded this gets invoked
-**//*
 @Component
 @Log4j2
 class MyBlockHandler implements UrlBlockHandler {
@@ -120,8 +99,7 @@ class MyBlockHandler implements UrlBlockHandler {
 		String app = e.getRuleLimitApp();
 		log.info("app: " + app);
 		log.info("block URI: " + req.getRequestURI());
-		res.getWriter().append("HOLY SHIT IT'S THE END!!!!!!");
+		res.getWriter().append("Oh noes!");
 	}
 }
 
-*/
