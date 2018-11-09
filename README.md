@@ -1,103 +1,125 @@
-# Spring Cloud ALibaba Notes
+# Bootiful Alibaba 
 
-https://nacos.io/en-us/docs/quick-start.html
+## Dependencies 
 
-<!-- goals -->
-<!-- - rocketmq (next version)  -->
-- sentinel (not english)
-- nacos 
-- ACM (application configuration management - only on Alibaba Cloud)
-- OSS (object store service - only on Alibaba Cloud)
+* 	`org.springframework.cloud`:`spring-cloud-alibaba-dependencies`:`0.2.0.RELEASE`:`pom`:`import`
+* 	`org.springframework.cloud`:`spring-cloud-starter-alibaba-nacos-config`
+* 	`org.springframework.cloud`:`spring-cloud-starter-alibaba-nacos-discovery`
+* 	`org.springframework.cloud`:`spring-cloud-starter-alibaba-sentinel`
+* 	`org.springframework.cloud`:`spring-cloud-starter-alicloud-oss`
 
-
-<!-- notes -->
-* download Sentinel (how?) (regular users clone the alibaba/Sentinel and `mvn clean package -f sentinel-dashboard/pom.xml `)
-* download Nacos.io (where?) ( use Java 8 and then $NACOS/bin/startup.sh -m standalone)
-* git clone Spring Cloud Alibaba 
-* git clone alibaba/Sentinel. Do `mvn clean install` for the `sentinel-dashboard` module. if ur behind the GFW u will need the following `settings.xml`:
+Are u having trouble downloading those dependencies? They're all in Maven central, but sometimes - depending on where you are in the world - Maven central can be a little slow. You _might_ want to try this Alibaba Maven repository in your `~/.m2/settings.xml`:
 
 ```
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
-                  https://maven.apache.org/xsd/settings-1.0.0.xsd">
-<mirrors><mirror>
-<id>alimaven</id>
-<name>aliyun maven</name>
-<url>http://maven.aliyun.com/nexus/content/groups/public/</url>
-<mirrorOf>central</mirrorOf>
-</mirror></mirrors>
+<settings 
+	xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+	<mirrors><mirror>
+	<id>alimaven</id>
+	<name>aliyun maven</name>
+	<url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+	<mirrorOf>central</mirrorOf>
+	</mirror></mirrors>
 </settings>
 ```
 
+## Sentinel 
+
+* 	Alibaba faced scale problems few others could hope to appreciate w/ 11/11
+* 	Sentinel is the tool that helps them address that issue 
+* 	it defines flow control rules 
+* 	you can define these rules in code...
+
+	```
+	@Configuration
+	class SentinelCodeConfiguration {
+
+		@EventListener(ApplicationReadyEvent.class)
+		public void configureSentinel() {
+			FlowRule flowRule = new FlowRule();
+			flowRule.setResource("/code");
+			flowRule.setCount(2);
+			flowRule.setGrade(RuleConstant.FLOW_GRADE_QPS);
+			flowRule.setLimitApp("default");
+			FlowRuleManager.loadRules(Collections.singletonList(flowRule));
+		}
+	}
+
+	```
+* 	or in sentinel's dashboard, which you can download in English! (https://github.com/alibaba/Sentinel/releases). Run it and visit it.
+
+*	once u have the sentinel application up and running u can respond to 'blocks' in a number of ways. One is to use a property, e.g.: `spring.cloud.sentinel.servlet.block-page=/eek`. This will route the `/eek` endpoint. 
+* 	another way to handle this is to use a `UrlBlockHandler`:
+	```
+	@Log4j2
+	@Component
+	class CustomUrlBlockHandler implements UrlBlockHandler {
+
+		@Override
+		public void blocked(
+			HttpServletRequest request,
+			HttpServletResponse response,
+			BlockException be) throws IOException {
+
+			response
+				.getWriter()
+				.append(">_<".trim());
+
+		}
+	}
+	```
+
+* 	a THIRD alternative is to store the configuration elsewhere. One great place to store them is in a configuration server using a custom `SentinelDataSource`. let's look at Nacos as a thing that could support this. Were not going to use it in this way, but we WILL look at Nacos to store other configuration.
+
 ## Nacos 
-* NaCos = Naming & Config Service
-* port 8848 because Mt. Everest's height is 8848M tall (LOL)
-* start nacos: `$NACOS_HOME/bin/startup.sh -m standalone`
-* visit nacos at http://localhost:8848/nacos/#/configurationManagement?dataId=&group=&appName=&namespace= 
-* make sure to choose 'En'!
-* goto spring-cloud-alibaba/s-c-a-examples/nacos/discovery
-* mvn spring-boot:run 
-* nacos can do both configuration and discovery (  <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery
-            </artifactId>
-        </dependency>)
 
-* u can change the configuration in the nacos config management and itll be instantly refreshed in the client apps and u can listen tot he RefreshedScopedRefreshEvent just as u would with spring cloud config server. 
-* http://localhost:62475/actuator/nacos-config
+* 	Nacos means 'NAming and COnfiguration Server'
+* 	it supports service registration and discovery. 
+*	You'll need to point your app to where Nacos lives for both config and service-and-registration purpose: 
+	
+	```
+	nacos=localhost:8848
+	spring.cloud.nacos.config.server-addr=${nacos}
+	spring.cloud.nacos.discovery.server-addr=${nacos}
+	```
 
-* u can add Sentinel FlowRules to Nacos itself: https://github.com/alibaba/sentinel/blob/master/sentinel-demo/sentinel-demo-dynamic-file-rule/src/main/resources/FlowRule.json (customized to reflect the resource in this client app, `/nihao`)
-  see the following image: adding-flow-rules-from-sentinel-to-nacos-so-that-they-apply-to-other-microservices.png
-* add the following to the client that wants this flow rules to be honored: 
-    <dependency>
-       <groupId>com.alibaba.csp</groupId>
-       <artifactId>sentinel-datasource-nacos</artifactId>
-       <version>1.3.0-GA</version>
-    </dependency>
-* add the following properties to tell the client to laod any flow rules from Naco: 
-    spring.cloud.sentinel.datasource.type=nacos
-    spring.cloud.sentinel.datasource.serverAddr=localhost:8848
-    spring.cloud.sentinel.datasource.groupId=DEFAULT_GROUP
-    spring.cloud.sentinel.datasource.dataId=sentinel-flow-rules.json
-    spring.cloud.sentinel.datasource.converter=flowConverter
-* the `flowConverter` is: 
-    
-    ```  
-    @Component("flowConverter")
-    class FlowConverter implements Converter<String, List<FlowRule>> {
-    
-        @Override
-        public List<FlowRule> convert(String source) {
-            return JSON.parseObject(source, new TypeReference<List<FlowRule>>() {
-            });
-        }
-    }
-    ``` 
-    
-* ```	@SentinelDataSource("spring.cloud.sentinel.datasource") private ReadableDataSource readableDataSource; ```
+* 	Nacos also has actuator endpoints. Enable them: `management.endpoints.web.exposure.include=*` and `management.endpoint.health.show-details=always`. then you can visit the Nacos actuator endpoint at `http://localhost:8080/actuator/nacos-config`.
+*	Nacos runs on port 8848 because, and this made me laugh, Mt. Everest's height is 8848M tall! 
+* 	you need to tell the client app what its name is `spring.application.name` and what file extension to use when talking to Nacos: ``` spring.cloud.nacos.config.file-extension=yaml  ```
+*	Also, make sure to enable `@EnableDiscoveryClient` 
+* 	Once you've done this, start the same a couple of times on the same host and you'll see multiple instances in the Nacos registry.
+* 	You can use the `DiscoveryClient`.
+*	Draw some config from Nacos 
+* 	You can change the configuration live and use the `@EventListener(RefreshScopeRefreshedEvent.class)` or `@RefreshScope` to reconfigure on refreshes. 
+*	Nacos is a great place to store sensitive information that shouldnt be in the application code itself. Sensitive information like, say, the auth token and secret for Aliyun, or Alibaba Cloud. Lets do that and then use it to connect our application to services runnning on Aliyun
 
-## OSS (object storeage service)
-* OSS: goto alibabacloud.com -> Products > Middleware > Storage & CDN > Object Storage Service
-git@github.com:spring-tips/bootiful-alibaba.git
 
-* add ```<dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-alicloud-oss</artifactId> </dependency>``` 
-* add 
-    
-    ```
-    spring.cloud.alicloud.access-key=AK
-    spring.cloud.alicloud.secret-key=SK
-    spring.cloud.alicloud.oss.endpoint=***.aliyuncs.com
-    ```
+## Aliyun 
 
-* goto alibabacloud.com, goto profile in top right (with ur avatar), choose 'Access Key', then download it. 
- 
-*  Regionsin Alibaba Cloud https://www.alibabacloud.com/help/doc-detail/31837.htm?spm=a2c63.l28256.a3.26.11515139ShvIYU 
+* 	Add `spring.cloud.alicloud.access-key=...` and `spring.cloud.alicloud.secret-key=...` to Nacos. Now we can use Spring Cloud Alibaba Alicloud from our Spring Boot appplication. 
+* 	You need to also specify which endpoint you'd like to connect your application: `spring.cloud.alicloud.oss.endpoint=http://oss-us-west-1.aliyuncs.com`
+* 	you can see what services are available in your ALiyun region by visiting Alibaba Cloud. We're going to take advantage of Aliyun OSS:
+	```
+	@Component
+	@Log4j2
+	class OssProcessor {
+
+		private final OSS oss;
+		private final String globalBucketName = "kitties-in-a-bucket";
+		private final Resource kittens;
+
+		OssProcessor(OSS oss, @Value("classpath:/kittens.jpg") Resource kittens) {
+			this.oss = oss;
+			this.kittens = kittens;
+			Assert.isTrue(kittens.exists(), "the file must exist");
+		}
+
+		@EventListener(ApplicationReadyEvent.class)
+		public void useOss() throws Exception {
+			Bucket photos = this.oss.createBucket(globalBucketName);
+			this.oss.putObject(photos.getName(), "kittens.jpg", this.kittens.getFile());
+		}
+	}
+
+	```
