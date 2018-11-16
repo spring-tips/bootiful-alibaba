@@ -92,7 +92,7 @@ Are u having trouble downloading those dependencies? They're all in Maven centra
 * 	You can use the `DiscoveryClient`.
 *	Draw some config from Nacos 
 * 	You can change the configuration live and use the `@EventListener(RefreshScopeRefreshedEvent.class)` or `@RefreshScope` to reconfigure on refreshes. 
-*	Nacos is a great place to store sensitive information that shouldnt be in the application code itself. Sensitive information like, say, the auth token and secret for Aliyun, or Alibaba Cloud. Lets do that and then use it to connect our application to services runnning on Aliyun
+*	Nacos is a great place to store sensitive information that shouldnt be in the application code itself. Sensitive information like, say, the auth token and secret for Aliyun, or Alibaba Cloud. Lets do that and then use it to connect our application to services running on Aliyun
 
 
 ## Aliyun 
